@@ -1,0 +1,35 @@
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Virtual environments
+venv/
+.venv/
+
+# OS files
+.DS_Store
+
+# Python packaging / build
+build/
+dist/
+*.egg-info/
+
+# IDE / editor
+.vscode/
+.idea/
+
+# Logs and experiment outputs
+logs/
+src/logs/
+
+# Data caches and large artifacts
+data/emb_cache/
+qdrant_storage/
+
+# Generated figures
+src/figures/
+
+# Jupyter/IPython
+.ipynb_checkpoints/
+

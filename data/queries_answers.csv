@@ -1,0 +1,7 @@
+query_id,query,expected_answer,relevant_doc_ids
+q01,"What was Q4 2024 revenue and growth?","Q4 2024 revenue reached 12.4M with 18% year-over-year growth. North America led at 22%.",doc_001
+q02,"What sustainability initiatives did the company report in 2023?","Reduced Scope 1 and 2 emissions by 24%, net zero by 2035, solar installations, renewable energy, water usage down 12%.",doc_002
+q03,"What are the strategic priorities for 2025?","Expand in APAC, AI-powered products, partner channels, 50M R&D investment, two new regional hubs.",doc_003
+q04,"What cybersecurity measures were taken?","Penetration test, SOC 2 Type II, phishing simulations improved, MFA mandatory for all employees.",doc_007
+q05,"How did APAC perform and what are the plans?","APAC revenue grew 31%, Japan and Australia largest, office in Singapore, 50 local staff, localization focus.",doc_008
+q06,"What customer and product metrics improved in 2024?","NPS 52 to 58, churn 4.2%, reliability and support. Enterprise platform analytics and SSO planned.","doc_009,doc_004"

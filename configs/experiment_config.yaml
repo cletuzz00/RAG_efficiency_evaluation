@@ -1,0 +1,37 @@
+qdrant:
+  host: "localhost"
+  port: 6333
+  collection_name: "business_docs"
+  distance: "cosine"        # or "dot"
+  vector_size: 768
+  hnsw:
+    m: 16
+    ef_construction: 128
+    ef_search: 64
+
+embeddings:
+  model_name: "BAAI/bge-base-en"
+  batch_size: 16
+  cache_dir: "../data/emb_cache"
+
+retrieval:
+  top_k: 5
+  hybrid:
+    w_dense: 0.6
+    w_sparse: 0.4
+    score_normalization: "minmax"   # or "zscore"
+
+metrics:
+  accuracy_at_k: 5
+  rem_weights:
+    alpha: 0.5   # accuracy
+    beta: 0.3    # latency
+    gamma: 0.2   # cost
+
+data:
+  documents_csv: "../data/business_corpus.csv"
+  queries_csv: "../data/queries_answers.csv"
+
+logging:
+  logs_csv: "../logs/logs_all.csv"
+

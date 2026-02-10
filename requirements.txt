@@ -1,0 +1,10 @@
+qdrant-client
+sentence-transformers
+rank-bm25
+nltk
+pandas
+tqdm
+matplotlib
+pyyaml
+numpy
+
