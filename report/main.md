@@ -1,9 +1,8 @@
 Retrieval Efficiency in RAG Systems for Business Intelligence
 =============================================================
 
-This document is a placeholder for the final 10–12 page report.
 
-Suggested structure:
+ Structure:
 
 1. Introduction & Motivation  
 2. Background  
