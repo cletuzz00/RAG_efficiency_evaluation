@@ -33,3 +33,4 @@ src/figures/
 # Jupyter/IPython
 .ipynb_checkpoints/
 
+.env

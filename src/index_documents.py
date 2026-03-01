@@ -2,8 +2,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from dotenv import load_dotenv
 import numpy as np
 import yaml
+
+# Load .env from project root so HF_TOKEN is set for Hugging Face
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from dataset import load_documents
 from embeddings import cache_embeddings

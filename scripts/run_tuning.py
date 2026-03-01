@@ -13,8 +13,13 @@ import sys
 from copy import deepcopy
 from pathlib import Path
 
+from dotenv import load_dotenv
+
 import pandas as pd
 import yaml
+
+# Load .env from project root so HF_TOKEN etc. are set for subprocess
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 
 def _flatten_sweep(sweep: dict, prefix: tuple = ()) -> list[tuple[tuple, list]]:

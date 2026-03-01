@@ -5,8 +5,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List
 
+from dotenv import load_dotenv
 import pandas as pd
 import yaml
+
+# Load .env from project root so HF_TOKEN is set for Hugging Face
+load_dotenv(Path(__file__).resolve().parent.parent / ".env")
 
 from dataset import load_queries
 from metrics import (
