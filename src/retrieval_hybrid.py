@@ -38,7 +38,7 @@ class HybridRetriever:
         self.w_dense: float = float(h_cfg.get("w_dense", 0.6))
         self.w_sparse: float = float(h_cfg.get("w_sparse", 0.4))
         self.dense = DenseRetriever(config_path=config_path)
-        self.sparse = SparseRetriever()
+        self.sparse = SparseRetriever(config_path=config_path)
 
     def search(self, query: str, top_k: int | None = None) -> List[HybridResult]:
         if top_k is None:

@@ -61,22 +61,30 @@ class QdrantVectorStore:
             },
         )
 
-    def upsert_points(self, vectors: Iterable[List[float]], payloads: Iterable[Dict[str, Any]]) -> None:
-        points: List[PointStruct] = []
-        for idx, (vec, payload) in enumerate(zip(vectors, payloads)):
-            # Qdrant point id must be int or UUID; keep original doc id in payload for retrieval
-            points.append(
-                PointStruct(
-                    id=idx,
-                    vector=vec,
-                    payload=payload,
-                )
-            )
-
-        if not points:
+    def upsert_points(
+        self,
+        vectors: Iterable[List[float]],
+        payloads: Iterable[Dict[str, Any]],
+        batch_size: int = 200,
+    ) -> None:
+        """Upsert points in batches to stay under Qdrant's HTTP payload size limit (~32 MB)."""
+        vectors_list = list(vectors)
+        payloads_list = list(payloads)
+        if not vectors_list:
             return
-
-        self.client.upsert(collection_name=self.config.collection_name, points=points)
+        for start in range(0, len(vectors_list), batch_size):
+            end = min(start + batch_size, len(vectors_list))
+            batch_points: List[PointStruct] = []
+            for i in range(start, end):
+                # Qdrant point id must be int or UUID; keep original doc id in payload for retrieval
+                batch_points.append(
+                    PointStruct(
+                        id=i,
+                        vector=vectors_list[i],
+                        payload=payloads_list[i],
+                    )
+                )
+            self.client.upsert(collection_name=self.config.collection_name, points=batch_points)
 
     def search(
         self,

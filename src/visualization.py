@@ -11,7 +11,11 @@ import yaml
 def load_logs(config_path: str = "../configs/experiment_config.yaml") -> pd.DataFrame:
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
-    logs_csv = cfg["logging"]["logs_csv"]
+    dataset = cfg["data"].get("dataset")
+    if dataset is not None:
+        logs_csv = cfg["logging"].get("logs_csv") or f"../logs/logs_{dataset}.csv"
+    else:
+        logs_csv = cfg["logging"]["logs_csv"]
     return pd.read_csv(logs_csv)
 
 

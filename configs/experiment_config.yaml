@@ -1,7 +1,7 @@
 qdrant:
   host: "localhost"
   port: 6333
-  collection_name: "business_docs"
+  collection_name: "docs"
   distance: "cosine"        # or "dot"
   vector_size: 768
   hnsw:
@@ -16,6 +16,8 @@ embeddings:
 
 retrieval:
   top_k: 5
+  # bm25_cache_path derived as ../logs/bm25_{dataset}.pkl when dataset is set
+  bm25_cache_path: "../logs/bm25.pkl"
   hybrid:
     w_dense: 0.6
     w_sparse: 0.4
@@ -29,9 +31,13 @@ metrics:
     gamma: 0.2   # cost
 
 data:
-  documents_csv: "../data/business_corpus.csv"
-  queries_csv: "../data/queries_answers.csv"
+  dataset: fiqa   # or fiqa; drives data paths, caches, and logs
+  # optional overrides (when dataset is set these are derived as ../data/{dataset}_test_*.csv):
+  # documents_csv: "../data/nfcorpus_test_documents.csv"
+  # queries_csv: "../data/nfcorpus_test_queries.csv"
+  # max_queries: 500
+  # max_documents: 10000
 
 logging:
-  logs_csv: "../logs/logs_all.csv"
-
+  # logs_csv derived as ../logs/logs_{dataset}.csv when dataset is set
+  logs_csv: "../logs/logs.csv"

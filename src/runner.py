@@ -41,14 +41,24 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
     with open(config_path, "r") as f:
         cfg = yaml.safe_load(f)
 
-    queries_csv = cfg["data"]["queries_csv"]
-    logs_csv = cfg["logging"]["logs_csv"]
+    dataset = cfg["data"].get("dataset")
+    if dataset is not None:
+        queries_csv = cfg["data"].get("queries_csv") or f"../data/{dataset}_test_queries.csv"
+        logs_csv = cfg["logging"].get("logs_csv") or f"../logs/logs_{dataset}.csv"
+    else:
+        queries_csv = cfg["data"]["queries_csv"]
+        logs_csv = cfg["logging"]["logs_csv"]
     accuracy_at_k = int(cfg["metrics"].get("accuracy_at_k", 5))
 
     queries = load_queries(queries_csv)
+    queries = [q for q in queries if q.relevant_doc_ids]
+    max_queries = cfg["data"].get("max_queries")
+    if max_queries is not None:
+        queries = queries[: int(max_queries)]
+    print(f"Running on {len(queries)} labeled queries" + (f" (max_queries={max_queries})." if max_queries is not None else "."))
 
     dense = DenseRetriever(config_path=config_path)
-    sparse = SparseRetriever()
+    sparse = SparseRetriever(config_path=config_path)
     hybrid = HybridRetriever(config_path=config_path)
 
     records: List[RetrievalRecord] = []

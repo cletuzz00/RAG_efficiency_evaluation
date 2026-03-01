@@ -1,0 +1,15 @@
+# Tuning config for FIQA: sweep retrieval and metric params, aggregate results.
+# Run: python scripts/run_tuning.py (from project root) or python run_tuning.py with --config.
+base_config: "experiment_config.yaml"
+dataset: fiqa
+
+sweep:
+  retrieval:
+    top_k: [5, 10, 20]
+    hybrid:
+      w_dense: [0.5, 0.6, 0.7]
+  metrics:
+    accuracy_at_k: [5, 10, 20]
+
+output:
+  results_csv: "logs/tuning_fiqa.csv"

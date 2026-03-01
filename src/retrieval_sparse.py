@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Sequence
 
 import nltk
+import yaml
 import numpy as np
 import pandas as pd
 from nltk.tokenize import word_tokenize
@@ -36,13 +37,22 @@ class SparseResult:
 
 
 class SparseRetriever:
-    def __init__(
-        self,
-        data_csv: str = "../data/business_corpus.csv",
-        model_path: str = "./logs/bm25.pkl",
-    ):
-        self.data_csv = Path(data_csv)
-        self.model_path = Path(model_path)
+    def __init__(self, config_path: str = "../configs/experiment_config.yaml"):
+        with open(config_path, "r") as f:
+            cfg = yaml.safe_load(f)
+        data_cfg = cfg["data"]
+        dataset = data_cfg.get("dataset")
+        if dataset is not None:
+            self.data_csv = Path(data_cfg.get("documents_csv") or f"../data/{dataset}_test_documents.csv")
+            self.model_path = Path(cfg["retrieval"].get("bm25_cache_path") or f"../logs/bm25_{dataset}.pkl")
+        else:
+            self.data_csv = Path(data_cfg["documents_csv"])
+            self.model_path = Path(cfg["retrieval"].get("bm25_cache_path", "logs/bm25.pkl"))
+        self._max_documents = data_cfg.get("max_documents")
+        if self._max_documents is not None:
+            self.model_path = self.model_path.with_stem(
+                self.model_path.stem + "_" + str(self._max_documents)
+            )
         self._bm25: BM25Okapi | None = None
         self._df: pd.DataFrame | None = None
         self._load_or_train()
@@ -57,6 +67,8 @@ class SparseRetriever:
             return
 
         df = pd.read_csv(self.data_csv)
+        if self._max_documents is not None:
+            df = df.head(self._max_documents)
         corpus = [word_tokenize(str(text).lower()) for text in df["text"]]
         bm25 = BM25Okapi(corpus)
         self.model_path.parent.mkdir(parents=True, exist_ok=True)
