@@ -1,0 +1,16 @@
+# Tuning config for NFCorpus: sweep retrieval and metric params, aggregate results.
+# Run: python scripts/run_tuning.py --config configs/tuning_nfcorpus.yaml
+base_config: "experiment_config.yaml"
+dataset: nfcorpus
+
+sweep:
+  retrieval:
+    top_k: [5, 10, 20]
+    hybrid:
+      w_dense: [0.5, 0.6, 0.7]
+  metrics:
+    accuracy_at_k: [5, 10, 20]
+
+output:
+  results_csv: "logs/tuning_nfcorpus.csv"
+

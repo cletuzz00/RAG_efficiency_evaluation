@@ -25,6 +25,7 @@ retrieval:
 
 metrics:
   accuracy_at_k: 5
+  rank_k: 10
   rem_weights:
     alpha: 0.5   # accuracy
     beta: 0.3    # latency

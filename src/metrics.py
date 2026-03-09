@@ -43,6 +43,81 @@ def accuracy_binary_at_k(
     return 1.0 if top_k & rel else 0.0
 
 
+def average_precision_at_k(
+    retrieved_doc_ids: Sequence[str],
+    query_example: QueryExample,
+    k: int,
+) -> float:
+    """Average Precision at k for binary relevance.
+
+    Precision is evaluated at each rank where a relevant document occurs, and
+    AP@k is the mean of those precisions, normalized by the number of relevant
+    documents up to k (or total number of relevant docs if smaller).
+    """
+    if not query_example.relevant_doc_ids:
+        return 0.0
+
+    rel_set = set(query_example.relevant_doc_ids)
+    if not retrieved_doc_ids:
+        return 0.0
+
+    hits = 0
+    score = 0.0
+    for idx, doc_id in enumerate(retrieved_doc_ids[:k], start=1):
+        if doc_id in rel_set:
+            hits += 1
+            score += hits / float(idx)
+
+    if hits == 0:
+        return 0.0
+
+    denom = min(len(rel_set), k)
+    return score / float(denom)
+
+
+def dcg_at_k(
+    retrieved_doc_ids: Sequence[str],
+    query_example: QueryExample,
+    k: int,
+) -> float:
+    """Discounted Cumulative Gain at k for binary relevance."""
+    if not query_example.relevant_doc_ids:
+        return 0.0
+
+    rel_set = set(query_example.relevant_doc_ids)
+    gains = []
+    for doc_id in retrieved_doc_ids[:k]:
+        gains.append(1.0 if doc_id in rel_set else 0.0)
+
+    if not gains:
+        return 0.0
+
+    gains_arr = np.asarray(gains, dtype=float)
+    discounts = 1.0 / np.log2(np.arange(2, gains_arr.size + 2))
+    return float(np.sum(gains_arr * discounts))
+
+
+def ndcg_at_k(
+    retrieved_doc_ids: Sequence[str],
+    query_example: QueryExample,
+    k: int,
+) -> float:
+    """Normalized DCG at k for binary relevance."""
+    if not query_example.relevant_doc_ids:
+        return 0.0
+
+    dcg = dcg_at_k(retrieved_doc_ids, query_example, k)
+    if dcg == 0.0:
+        return 0.0
+
+    ideal_rels = [1.0] * min(len(query_example.relevant_doc_ids), k)
+    discounts = 1.0 / np.log2(np.arange(2, len(ideal_rels) + 2))
+    idcg = float(np.sum(np.asarray(ideal_rels, dtype=float) * discounts))
+    if idcg == 0.0:
+        return 0.0
+    return dcg / idcg
+
+
 @dataclass
 class RemWeights:
     alpha: float

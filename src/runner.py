@@ -16,10 +16,12 @@ from dataset import load_queries
 from metrics import (
     RemWeights,
     accuracy_binary_at_k,
+    average_precision_at_k,
     compute_rem,
     jaccard_overlap,
     load_rem_weights,
     minmax_normalize,
+    ndcg_at_k,
 )
 from retrieval_dense import DenseRetriever
 from retrieval_sparse import SparseRetriever
@@ -32,6 +34,8 @@ class RetrievalRecord:
     query: str
     retrieval_type: str
     accuracy: float
+    map_at_k: float
+    ndcg_at_k: float
     latency_s: float
     cost_tokens: float
 
@@ -52,7 +56,11 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
     else:
         queries_csv = cfg["data"]["queries_csv"]
         logs_csv = cfg["logging"]["logs_csv"]
+
     accuracy_at_k = int(cfg["metrics"].get("accuracy_at_k", 5))
+    rank_k = int(cfg["metrics"].get("rank_k", accuracy_at_k))
+
+    retrieval_top_k = int(cfg["retrieval"].get("top_k", accuracy_at_k))
 
     queries = load_queries(queries_csv)
     queries = [q for q in queries if q.relevant_doc_ids]
@@ -70,11 +78,13 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
     for q in queries:
         # Dense
         t0 = time.perf_counter()
-        dense_results = dense.search(q.query)
+        dense_results = dense.search(q.query, top_k=retrieval_top_k)
         latency_dense = time.perf_counter() - t0
         dense_ids = [r.doc_id for r in dense_results]
         dense_texts = [r.text for r in dense_results]
         acc_dense = accuracy_binary_at_k(dense_ids, q, k=accuracy_at_k)
+        map_dense = average_precision_at_k(dense_ids, q, k=rank_k)
+        ndcg_dense = ndcg_at_k(dense_ids, q, k=rank_k)
         # fall back to Jaccard on text if no relevance labels
         if not q.relevant_doc_ids:
             joint_text = " ".join(dense_texts)
@@ -86,6 +96,8 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
                 query=q.query,
                 retrieval_type="dense",
                 accuracy=acc_dense,
+                map_at_k=map_dense,
+                ndcg_at_k=ndcg_dense,
                 latency_s=latency_dense,
                 cost_tokens=cost_dense,
             )
@@ -93,11 +105,13 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
 
         # Sparse
         t0 = time.perf_counter()
-        sparse_results = sparse.search(q.query)
+        sparse_results = sparse.search(q.query, top_k=retrieval_top_k)
         latency_sparse = time.perf_counter() - t0
         sparse_ids = [r.doc_id for r in sparse_results]
         sparse_texts = [r.text for r in sparse_results]
         acc_sparse = accuracy_binary_at_k(sparse_ids, q, k=accuracy_at_k)
+        map_sparse = average_precision_at_k(sparse_ids, q, k=rank_k)
+        ndcg_sparse = ndcg_at_k(sparse_ids, q, k=rank_k)
         if not q.relevant_doc_ids:
             joint_text = " ".join(sparse_texts)
             acc_sparse = jaccard_overlap(joint_text, q.expected_answer)
@@ -108,6 +122,8 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
                 query=q.query,
                 retrieval_type="sparse",
                 accuracy=acc_sparse,
+                map_at_k=map_sparse,
+                ndcg_at_k=ndcg_sparse,
                 latency_s=latency_sparse,
                 cost_tokens=cost_sparse,
             )
@@ -115,11 +131,13 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
 
         # Hybrid
         t0 = time.perf_counter()
-        hybrid_results = hybrid.search(q.query)
+        hybrid_results = hybrid.search(q.query, top_k=retrieval_top_k)
         latency_hybrid = time.perf_counter() - t0
         hybrid_ids = [r.doc_id for r in hybrid_results]
         hybrid_texts = [r.text for r in hybrid_results]
         acc_hybrid = accuracy_binary_at_k(hybrid_ids, q, k=accuracy_at_k)
+        map_hybrid = average_precision_at_k(hybrid_ids, q, k=rank_k)
+        ndcg_hybrid = ndcg_at_k(hybrid_ids, q, k=rank_k)
         if not q.relevant_doc_ids:
             joint_text = " ".join(hybrid_texts)
             acc_hybrid = jaccard_overlap(joint_text, q.expected_answer)
@@ -130,6 +148,8 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
                 query=q.query,
                 retrieval_type="hybrid",
                 accuracy=acc_hybrid,
+                map_at_k=map_hybrid,
+                ndcg_at_k=ndcg_hybrid,
                 latency_s=latency_hybrid,
                 cost_tokens=cost_hybrid,
             )

@@ -78,29 +78,43 @@ You should get a JSON response (possibly an empty list of collections).
    cd src && python index_documents.py
    ```
 
-3. **Run experiments**: evaluate dense, sparse, and hybrid retrieval and compute REM; results are written to `logs/logs_<dataset>.csv` (e.g. `logs_nfcorpus.csv`):
+3. **Run experiments**: evaluate dense, sparse, and hybrid retrieval and compute metrics (accuracy@k, MAP@k, nDCG@k, REM).
+
+   You can either call the runner directly:
 
    ```bash
    cd src && python runner.py
    ```
 
-4. **Visualization**: generate comparison plots into `figures/` (e.g. from `src/` run the visualization script with the default config path).
+   or use the unified entry point from the project root:
+
+   ```bash
+   # Single run using the dataset in configs/experiment_config.yaml
+   python scripts/run_experiments.py --mode single
+
+   # Single run for a specific dataset
+   python scripts/run_experiments.py --mode single --datasets fiqa
+   ```
+
+4. **Visualization**: generate comparison plots into `figures/` (e.g. from `src/` run the visualization script with the default config path), and use the analysis notebooks under `notebooks/` for deeper REM-focused analysis.
 
 **Switching datasets:** Set `data.dataset` to `nfcorpus` or `fiqa` in `configs/experiment_config.yaml`. Data paths, embedding cache, BM25 cache, and log file are then derived per dataset (e.g. `doc_embeddings_nfcorpus.npy`, `bm25_nfcorpus.pkl`, `logs_nfcorpus.csv`), so there is no cross-talk. After changing `dataset`, re-run `index_documents.py` then `runner.py`. Optionally, to remove the other dataset's cache and log files, run from the project root: `python scripts/clean_dataset_caches.py`.
 
 **Faster runs:** In `configs/experiment_config.yaml` you can set `data.max_queries` and/or `data.max_documents` (e.g. 500 and 10000) to cap the test data; remove or comment out those keys for full-data runs.
 
-### 5. Tunable evaluation (FIQA)
+### 5. Tunable evaluation (FIQA and NFCorpus)
 
-You can sweep retrieval and metric parameters on the FIQA dataset and aggregate results in one place. From the **project root**:
+You can sweep retrieval and metric parameters and aggregate results in one place. From the **project root**:
 
 ```bash
-python scripts/run_tuning.py
+# FIQA only
+python scripts/run_experiments.py --mode tuning --datasets fiqa
+
+# FIQA and NFCorpus
+python scripts/run_experiments.py --mode tuning --datasets fiqa,nfcorpus
 ```
 
-- **Config:** Edit `configs/tuning_fiqa.yaml` to change the parameter grid (`retrieval.top_k`, `retrieval.hybrid.w_dense`, `metrics.accuracy_at_k`) and the base experiment config path. The script forces `data.dataset: fiqa` and runs the same evaluation runner once per combination.
-- **Output:** Combined results are written to `logs/tuning_fiqa.csv` (one row per query × retrieval type × run). The script prints the best run by mean accuracy and the best run by mean REM, with their parameter combinations.
+- **Configs:** Edit `configs/tuning_fiqa.yaml` and `configs/tuning_nfcorpus.yaml` to change the parameter grids (e.g. `retrieval.top_k`, `retrieval.hybrid.w_dense`, `metrics.accuracy_at_k`) and the base experiment config path. Each tuning config sets `data.dataset` for the dataset it targets.
+- **Output:** Combined results are written to `logs/tuning_<dataset>.csv` (one row per query × retrieval type × run). Per-run summaries are written to `logs/tuning_<dataset>_runs.csv`, and best runs by mean accuracy and mean REM are saved to `logs/tuning_<dataset>_best.txt`.
 
-No changes to the core runner or retrievers are required; temp configs are written under `configs/tmp/` and removed after each run.
-
-Refer to `configs/experiment_config.yaml` and the source files under `src/` for configuration details and extensibility.
+Refer to `configs/experiment_config.yaml`, the tuning configs under `configs/`, and the source files under `src/` for configuration details and extensibility. The notebooks under `notebooks/` (e.g. `rem_analysis.ipynb`, `multi_dataset_analysis.ipynb`) provide additional plots such as Pareto frontiers, REM-weight sensitivity, and multi-dataset comparisons.
