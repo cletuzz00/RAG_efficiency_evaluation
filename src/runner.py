@@ -22,6 +22,7 @@ from metrics import (
     load_rem_weights,
     minmax_normalize,
     ndcg_at_k,
+    recall_at_k,
 )
 from retrieval_dense import DenseRetriever
 from retrieval_sparse import SparseRetriever
@@ -36,6 +37,7 @@ class RetrievalRecord:
     accuracy: float
     map_at_k: float
     ndcg_at_k: float
+    recall_at_k: float
     latency_s: float
     cost_tokens: float
 
@@ -85,6 +87,7 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
         acc_dense = accuracy_binary_at_k(dense_ids, q, k=accuracy_at_k)
         map_dense = average_precision_at_k(dense_ids, q, k=rank_k)
         ndcg_dense = ndcg_at_k(dense_ids, q, k=rank_k)
+        rec_dense = recall_at_k(dense_ids, q, k=accuracy_at_k)
         # fall back to Jaccard on text if no relevance labels
         if not q.relevant_doc_ids:
             joint_text = " ".join(dense_texts)
@@ -98,6 +101,7 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
                 accuracy=acc_dense,
                 map_at_k=map_dense,
                 ndcg_at_k=ndcg_dense,
+                recall_at_k=rec_dense,
                 latency_s=latency_dense,
                 cost_tokens=cost_dense,
             )
@@ -112,6 +116,7 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
         acc_sparse = accuracy_binary_at_k(sparse_ids, q, k=accuracy_at_k)
         map_sparse = average_precision_at_k(sparse_ids, q, k=rank_k)
         ndcg_sparse = ndcg_at_k(sparse_ids, q, k=rank_k)
+        rec_sparse = recall_at_k(sparse_ids, q, k=accuracy_at_k)
         if not q.relevant_doc_ids:
             joint_text = " ".join(sparse_texts)
             acc_sparse = jaccard_overlap(joint_text, q.expected_answer)
@@ -124,6 +129,7 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
                 accuracy=acc_sparse,
                 map_at_k=map_sparse,
                 ndcg_at_k=ndcg_sparse,
+                recall_at_k=rec_sparse,
                 latency_s=latency_sparse,
                 cost_tokens=cost_sparse,
             )
@@ -138,6 +144,7 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
         acc_hybrid = accuracy_binary_at_k(hybrid_ids, q, k=accuracy_at_k)
         map_hybrid = average_precision_at_k(hybrid_ids, q, k=rank_k)
         ndcg_hybrid = ndcg_at_k(hybrid_ids, q, k=rank_k)
+        rec_hybrid = recall_at_k(hybrid_ids, q, k=accuracy_at_k)
         if not q.relevant_doc_ids:
             joint_text = " ".join(hybrid_texts)
             acc_hybrid = jaccard_overlap(joint_text, q.expected_answer)
@@ -150,6 +157,7 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
                 accuracy=acc_hybrid,
                 map_at_k=map_hybrid,
                 ndcg_at_k=ndcg_hybrid,
+                recall_at_k=rec_hybrid,
                 latency_s=latency_hybrid,
                 cost_tokens=cost_hybrid,
             )
@@ -158,10 +166,18 @@ def run_experiments(config_path: str = "../configs/experiment_config.yaml") -> p
     # Build DataFrame
     df = pd.DataFrame([r.__dict__ for r in records])
 
-    # Normalize metrics and compute REM
-    df["accuracy_norm"] = minmax_normalize(df["accuracy"].tolist())
-    df["latency_norm"] = minmax_normalize(df["latency_s"].tolist())
-    df["cost_norm"] = minmax_normalize(df["cost_tokens"].tolist())
+    # Normalize metrics and compute REM (per-query normalization)
+    def _normalize_per_query(df_in: pd.DataFrame) -> pd.DataFrame:
+        parts: list[pd.DataFrame] = []
+        for _, g in df_in.groupby("query_id", sort=False):
+            g = g.copy()
+            g["accuracy_norm"] = minmax_normalize(g["accuracy"].tolist())
+            g["latency_norm"] = minmax_normalize(g["latency_s"].tolist())
+            g["cost_norm"] = minmax_normalize(g["cost_tokens"].tolist())
+            parts.append(g)
+        return pd.concat(parts, ignore_index=True)
+
+    df = _normalize_per_query(df)
 
     weights: RemWeights = load_rem_weights(config_path)
     df["REM"] = df.apply(

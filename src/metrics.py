@@ -43,6 +43,21 @@ def accuracy_binary_at_k(
     return 1.0 if top_k & rel else 0.0
 
 
+def recall_at_k(
+    retrieved_doc_ids: Sequence[str],
+    query_example: QueryExample,
+    k: int,
+) -> float:
+    """Recall@k: fraction of relevant docs appearing in top-k."""
+    if not query_example.relevant_doc_ids:
+        return 0.0
+    rel = set(query_example.relevant_doc_ids)
+    if not rel:
+        return 0.0
+    top_k = set(retrieved_doc_ids[:k])
+    return len(rel & top_k) / float(len(rel))
+
+
 def average_precision_at_k(
     retrieved_doc_ids: Sequence[str],
     query_example: QueryExample,
